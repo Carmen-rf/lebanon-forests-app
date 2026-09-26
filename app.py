@@ -419,7 +419,7 @@ center = (
 fig_donut = go.Figure(
     go.Pie(
         labels=labels, values=values, hole=0.58, sort=False, direction="clockwise",
-        rotation=90, marker=dict(colors=colors, line=dict(color="white", width=2)),
+        rotation=0, marker=dict(colors=colors, line=dict(color="white", width=2)),
         text=texts, textinfo="text", textposition="inside", insidetextorientation="horizontal",
         hovertemplate="%{label}<br>%{value:.1f} kt (%{percent})<extra></extra>",
     )
