@@ -19,6 +19,26 @@ st.set_page_config(
     page_icon="🌲",
     layout="wide",
 )
+# Softer, more visible expanders: light grey fill, bold dark-green label
+st.markdown(
+    """
+    <style>
+    [data-testid="stExpander"] details {
+        background-color: #f5f6f6;
+        border: 1px solid #e1e5e4;
+        border-radius: 0.6rem;
+    }
+    [data-testid="stExpander"] summary {
+        font-weight: 600;
+        color: #134e4a;
+    }
+    [data-testid="stExpander"] summary:hover {
+        color: #0f7b6c;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 NAVY = "#0f7b6c"      # Forestland / removals -> forest teal-green
 MAROON = "#ee6c2b"    # Forest conversion / emissions -> clearing orange
