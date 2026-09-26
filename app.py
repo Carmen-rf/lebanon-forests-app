@@ -184,7 +184,7 @@ st.subheader("Explore a period")
 st.markdown(
     "Pick an era first, then narrow the years inside it. The slider only offers years "
     "that belong to the era you chose, so you can drill down from the big picture to a "
-    "specific stretch of years. Both charts, the numbers and the summary sentence update together."
+    "specific stretch of years. All three charts, the numbers and the summary sentence update together."
 )
 
 w1, w2 = st.columns([1, 2])
@@ -247,9 +247,9 @@ second control only offers valid years for the first choice. That is what makes 
 drill-down rather than two separate filters.
 
 **Course concept, reducing clutter and focusing attention:** narrowing the years removes
-bars from the carbon chart, so fewer bars are left to compare. On the area chart, the selected
-years are drawn in strong navy while the rest fade to grey, so colour draws the eye to
-the chosen range.
+bars from the carbon chart, so fewer bars are left to compare. On the area chart and the donut, the
+selected years are drawn in strong colour while the rest fade to grey, so colour draws the
+eye to the chosen range without hiding the full picture.
 """
         )
 
@@ -269,10 +269,8 @@ k1.metric(
 k2.metric("CO2 absorbed by forest", f"{s['removed']:,.1f} kt", help="Sum of Forestland removals.")
 k3.metric("CO2 released by clearing", f"{s['emitted']:,.1f} kt", help="Sum of Net Forest conversion emissions.")
 k4.metric(
-    "Net balance",
+    "Net balance (" + ("net sink" if s["net"] < 0 else "net source") + ")",
     f"{s['net']:+,.1f} kt",
-    delta="net sink" if s["net"] < 0 else ("net source" if s["net"] > 0 else "balanced"),
-    delta_color="normal" if s["net"] < 0 else "inverse",
     help="Absorbed minus released. Negative means the forest sector removed more CO2 than it emitted.",
 )
 
@@ -318,8 +316,11 @@ fig_area.add_trace(
         hovertemplate="%{y:.2f} thousand ha<extra>Selected</extra>",
     )
 )
-fig_area.add_vrect(x0=start - 0.5, x1=end + 0.5, fillcolor=NAVY, opacity=0.06, line_width=0)
-fig_area.add_vline(x=BREAK_YEAR - 0.5, line_dash="dash", line_color=MAROON, opacity=0.6)
+if (start, end) != (1990, 2021):  # only shade when a sub-range is selected
+    fig_area.add_vrect(x0=start - 0.5, x1=end + 0.5, fillcolor=NAVY, opacity=0.07,
+                       line_width=0, layer="below")
+fig_area.add_shape(type="line", x0=BREAK_YEAR - 0.5, x1=BREAK_YEAR - 0.5, y0=0, y1=1,
+                   yref="paper", line=dict(color=MAROON, width=1.5, dash="dash"), layer="above")
 fig_area.add_annotation(
     x=BREAK_YEAR - 0.5, y=1, yref="paper", text=" 2011 turnaround", showarrow=False,
     xanchor="left", yanchor="top", font=dict(size=12, color=MAROON),
@@ -327,7 +328,7 @@ fig_area.add_annotation(
 fig_area.update_yaxes(title="Forest area (thousand ha)", range=[136.5, 145])
 fig_area.update_xaxes(title=None, range=[1989.5, 2021.5], dtick=5)
 fig_area.update_layout(title=f"Forest area: decline, then turnaround  ·  selected {span}")
-style(fig_area)
+style(fig_area, height=460)
 
 # ---------------------------------------------------------------------------
 # Chart 2: Carbon flows for the selected years only
@@ -369,6 +370,11 @@ fig_co2.update_yaxes(
 fig_co2.update_xaxes(title=None, range=[start - 0.6, end + 0.6], dtick=1 if end - start <= 12 else 2)
 fig_co2.update_layout(barmode="relative", title=f"Where the carbon went, {span}", bargap=0.25)
 style(fig_co2)
+# legend under the chart so it doesn't collide with the title
+fig_co2.update_layout(
+    legend=dict(orientation="h", yanchor="top", y=-0.12, xanchor="left", x=0),
+    margin=dict(b=110), height=460,
+)
 
 ch1, ch2 = st.columns(2)
 with ch1:
@@ -383,6 +389,65 @@ with ch2:
         "Bars below zero are CO2 the forest absorbed and bars above zero are CO2 released by "
         "clearing. The dotted line is the net. The y-axis stays fixed across selections "
         "so eras can be compared fairly."
+    )
+
+# ---------------------------------------------------------------------------
+# Chart 3: Donut - when did clearing emissions happen? (selection highlighted)
+# ---------------------------------------------------------------------------
+DECADE_COLORS = {"1990s": MAROON, "2000s": "#a9757f", "2010s": "#d9a5ae"}
+OTHER = "#e6e3e0"
+
+df["decade"] = (df["Year"] // 10 * 10).astype(str) + "s"
+df["selected"] = df["Year"].between(start, end)
+labels, values, colors, texts = [], [], [], []
+for dec, color in DECADE_COLORS.items():
+    for is_sel in (True, False):
+        v = df.loc[(df["decade"] == dec) & (df["selected"] == is_sel), "conv_co2"].sum()
+        if v <= 0:
+            continue
+        labels.append(f"{dec} · {'selected years' if is_sel else 'other years'}")
+        values.append(v)
+        colors.append(color if is_sel else OTHER)
+        texts.append(f"{dec}<br>{v / conv_total:.0%}" if is_sel else "")
+
+sel_share = s["emitted"] / conv_total
+center = (
+    f"<b>{sel_share:.0%}</b><br>of all clearing CO2<br>in {span}"
+    if sel_share > 0 else "<b>0%</b><br>no clearing<br>in these years"
+)
+
+fig_donut = go.Figure(
+    go.Pie(
+        labels=labels, values=values, hole=0.58, sort=False, direction="clockwise",
+        rotation=90, marker=dict(colors=colors, line=dict(color="white", width=2)),
+        text=texts, textinfo="text", textposition="inside", insidetextorientation="horizontal",
+        hovertemplate="%{label}<br>%{value:.1f} kt (%{percent})<extra></extra>",
+    )
+)
+fig_donut.add_annotation(text=center, x=0.5, y=0.5, showarrow=False, font=dict(size=15, color=INK))
+fig_donut.update_layout(title="When did clearing emissions happen?", showlegend=False)
+style(fig_donut, height=400)
+fig_donut.update_layout(hovermode="closest", margin=dict(l=20, r=20, t=60, b=20))
+
+dec_tot = df.groupby("decade")["conv_co2"].sum()
+d1, d2 = st.columns([1, 1])
+with d1:
+    st.plotly_chart(fig_donut)
+with d2:
+    st.markdown("##### Reading the donut")
+    st.markdown(
+        f"""
+The whole ring is **all {conv_total:,.1f} kt of CO2** released by forest clearing between 1990 and 2021.
+Coloured slices are the part that falls inside your selected years and grey is the rest.
+
+- **1990s:** {dec_tot.get('1990s', 0):,.1f} kt ({dec_tot.get('1990s', 0) / conv_total:.0%})
+- **2000s:** {dec_tot.get('2000s', 0):,.1f} kt ({dec_tot.get('2000s', 0) / conv_total:.0%})
+- **2010s:** {dec_tot.get('2010s', 0):,.1f} kt ({dec_tot.get('2010s', 0) / conv_total:.0%}), all of it from 2010
+- **2020–2021:** 0 kt
+
+Almost two-thirds of all clearing emissions come from the 1990s, and clearing stops
+completely from 2011. Pick the recovery era and the ring turns fully grey.
+"""
     )
 
 with st.expander(f"See the numbers for {span}"):
