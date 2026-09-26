@@ -1,6 +1,6 @@
 # Lebanon's Forests: From Carbon Source to Carbon Sink (1990–2021)
 
-**Live app:** https://YOUR-APP-NAME.streamlit.app  <!-- replace after deploying -->
+   **Live app:** https://lebanon-forests-app-n99uxfvwmzsx5jtrhbxxfe.streamlit.app
 
 An interactive Streamlit page about how Lebanon's forests went from being a net source of CO2
 (when clearing outweighed regrowth, 1990–2010) to a strong net sink (2011–2021).
