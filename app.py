@@ -216,7 +216,7 @@ with w1:
         index=0,
         help="The eras are split at 2011, the year the trend reversed.",
     )
-        with st.expander("Why this control?", icon=":material/lightbulb:"):
+    with st.expander("Why this control?", icon=":material/lightbulb:"):
         st.markdown(
             """
 **User question:** *Is the story different before and after the 2011 turnaround?*
@@ -249,7 +249,7 @@ with w2:
         step=1,
         key=f"years_{lo}_{hi}",
     )
-        with st.expander("Why this control?", icon=":material/lightbulb:"):
+    with st.expander("Why this control?", icon=":material/lightbulb:"):
         st.markdown(
             """
 **User question:** *How much CO2 was absorbed or released over a specific stretch of years,
@@ -481,7 +481,7 @@ completely from 2011. Pick the recovery era and the ring turns fully grey.
 """
     )
 
-with st.expander(f"See the numbers for {span}", icon=":material/table_chart:"):
+    with st.expander(f"See the numbers for {span}", icon=":material/table_chart:"):
     table = sel.rename(
         columns={
             "forest_area": "Forest area (1000 ha)",
