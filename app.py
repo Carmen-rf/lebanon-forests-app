@@ -297,7 +297,7 @@ if s["emitted"] > 0:
     )
 else:
     summary += " No forest clearing was recorded in these years."
-st.info(summary)
+st.success(summary)
 
 # ---------------------------------------------------------------------------
 # Chart 1: Forest area (full record for context, selection highlighted)
