@@ -20,10 +20,10 @@ st.set_page_config(
     layout="wide",
 )
 
-NAVY = "#1f3a5f"      # Forestland / removals
-MAROON = "#7b2d3b"    # Forest conversion / emissions
-GREY = "#c4c4c4"      # context (years outside the selection)
-INK = "#2b2b2b"       # net balance line
+NAVY = "#0f7b6c"      # Forestland / removals -> forest teal-green
+MAROON = "#ee6c2b"    # Forest conversion / emissions -> clearing orange
+GREY = "#cfd4d3"      # context (years outside the selection)
+INK = "#1f2933"       # net balance line
 BREAK_YEAR = 2011
 
 # Look for the CSV in data/ first, then next to app.py (works whichever way it was uploaded)
@@ -47,8 +47,8 @@ ERAS = {
 def style(fig, height=420):
     fig.update_layout(
         template="simple_white",
-        font=dict(family="Georgia, Times New Roman, serif", size=14, color=INK),
-        title=dict(font=dict(size=19, color=NAVY), x=0.01, xanchor="left"),
+        font=dict(family="Source Sans 3, Source Sans Pro, Helvetica, sans-serif", size=14, color=INK),
+        title=dict(font=dict(size=19, color="#134e4a"), x=0.01, xanchor="left"),
         margin=dict(l=60, r=30, t=70, b=50),
         height=height,
         legend=dict(orientation="h", yanchor="bottom", y=1.0, xanchor="right", x=1),
@@ -249,7 +249,9 @@ drill-down rather than two separate filters.
 **Course concept, reducing clutter and focusing attention:** narrowing the years removes
 bars from the carbon chart, so fewer bars are left to compare. On the area chart and the donut, the
 selected years are drawn in strong colour while the rest fade to grey, so colour draws the
-eye to the chosen range without hiding the full picture.
+eye to the chosen range without hiding the full picture. Colour is also semantic across
+the page: green always means CO2 absorbed by the forest and orange always means CO2
+released by clearing, so readers can tell the two flows apart without checking a legend.
 """
         )
 
@@ -380,26 +382,26 @@ ch1, ch2 = st.columns(2)
 with ch1:
     st.plotly_chart(fig_area)
     st.caption(
-        "Grey shows the full record for context and navy shows your selection. The dashed line "
+        "Grey shows the full record for context and green shows your selection. The dashed line "
         "marks 2011, where two decades of loss turn into steady regrowth."
     )
 with ch2:
     st.plotly_chart(fig_co2)
     st.caption(
-        "Bars below zero are CO2 the forest absorbed and bars above zero are CO2 released by "
-        "clearing. The dotted line is the net. The y-axis stays fixed across selections "
+        "Green bars below zero are CO2 the forest absorbed and orange bars above zero are CO2 "
+        "released by clearing. The dotted line is the net. The y-axis stays fixed across selections "
         "so eras can be compared fairly."
     )
 
 # ---------------------------------------------------------------------------
 # Chart 3: Donut - when did clearing emissions happen? (selection highlighted)
 # ---------------------------------------------------------------------------
-DECADE_COLORS = {"1990s": MAROON, "2000s": "#a9757f", "2010s": "#d9a5ae"}
-OTHER = "#e6e3e0"
+DECADE_COLORS = {"1990s": MAROON, "2000s": "#f4a06b", "2010s": "#f9c9a4"}
+OTHER = "#c9c4bf"   # outside the selection: muted, but clearly filled
 
 df["decade"] = (df["Year"] // 10 * 10).astype(str) + "s"
 df["selected"] = df["Year"].between(start, end)
-labels, values, colors, texts = [], [], [], []
+labels, values, colors, texts, text_colors = [], [], [], [], []
 for dec, color in DECADE_COLORS.items():
     for is_sel in (True, False):
         v = df.loc[(df["decade"] == dec) & (df["selected"] == is_sel), "conv_co2"].sum()
@@ -408,7 +410,14 @@ for dec, color in DECADE_COLORS.items():
         labels.append(f"{dec} · {'selected years' if is_sel else 'other years'}")
         values.append(v)
         colors.append(color if is_sel else OTHER)
-        texts.append(f"{dec}<br>{v / conv_total:.0%}" if is_sel else "")
+        share = v / conv_total
+        if is_sel:
+            texts.append(f"<b>{dec}</b><br>{share:.0%}")
+            text_colors.append("white" if dec == "1990s" else INK)  # dark text on the light oranges
+        else:
+            # label grey slices too, so they read as "other years", not as empty space
+            texts.append(f"{dec}<br>not selected<br>{share:.0%}" if share >= 0.08 else "")
+            text_colors.append("#4a4540")
 
 sel_share = s["emitted"] / conv_total
 center = (
@@ -420,7 +429,7 @@ fig_donut = go.Figure(
     go.Pie(
         labels=labels, values=values, hole=0.58, sort=False, direction="clockwise",
         rotation=0, marker=dict(colors=colors, line=dict(color="white", width=2)),
-        text=texts, textinfo="text", textposition="inside", insidetextorientation="horizontal",
+        text=texts, textinfo="text", textfont=dict(size=12, color=text_colors), textposition="inside", insidetextorientation="horizontal",
         hovertemplate="%{label}<br>%{value:.1f} kt (%{percent})<extra></extra>",
     )
 )
@@ -438,7 +447,9 @@ with d2:
     st.markdown(
         f"""
 The whole ring is **all {conv_total:,.1f} kt of CO2** released by forest clearing between 1990 and 2021.
-Coloured slices are the part that falls inside your selected years and grey is the rest.
+**Coloured slices** are the emissions from your selected years. **Grey slices** are emissions from
+the other years in the same decade, so they're real emissions that sit outside your selection.
+The decades run clockwise from the top.
 
 - **1990s:** {dec_tot.get('1990s', 0):,.1f} kt ({dec_tot.get('1990s', 0) / conv_total:.0%})
 - **2000s:** {dec_tot.get('2000s', 0):,.1f} kt ({dec_tot.get('2000s', 0) / conv_total:.0%})
