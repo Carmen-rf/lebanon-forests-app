@@ -481,7 +481,7 @@ completely from 2011. Pick the recovery era and the ring turns fully grey.
 """
     )
 
-    with st.expander(f"See the numbers for {span}", icon=":material/table_chart:"):
+with st.expander(f"See the numbers for {span}", icon=":material/table_chart:"):
     table = sel.rename(
         columns={
             "forest_area": "Forest area (1000 ha)",
