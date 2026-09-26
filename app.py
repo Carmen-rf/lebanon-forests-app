@@ -26,7 +26,16 @@ GREY = "#c4c4c4"      # context (years outside the selection)
 INK = "#2b2b2b"       # net balance line
 BREAK_YEAR = 2011
 
-DATA_PATH = Path(__file__).parent / "data" / "Dataset.csv"
+# Look for the CSV in data/ first, then next to app.py (works whichever way it was uploaded)
+HERE = Path(__file__).parent
+CANDIDATES = [HERE / "data" / "Dataset.csv", HERE / "Dataset.csv"]
+DATA_PATH = next((p for p in CANDIDATES if p.exists()), None)
+if DATA_PATH is None:
+    st.error(
+        "Dataset.csv was not found. Upload it to the repository, either at the top level "
+        "next to app.py or inside a folder called data/."
+    )
+    st.stop()
 
 ERAS = {
     "Full record (1990–2021)": (1990, 2021),
